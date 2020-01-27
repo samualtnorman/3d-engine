@@ -1,6 +1,6 @@
 "use strict";
 
-class Vec3d extends Array {
+class Vector extends Array {
 	constructor(...args) {
 		// accepts object with x y z numbers
 		// accepts array with 3 numbers
@@ -25,7 +25,11 @@ class Vec3d extends Array {
 		return { x: this.x, y: this.y, z: this.z };
 	}
 
-	get x() { 
+	map(...args) {
+		return [ ...this ].map(...args);
+	}
+
+	get x() {
 		return this[0];
 	}
 	set x(x) {
@@ -47,15 +51,21 @@ class Vec3d extends Array {
 	}
 
 	get projected() {
-		var o = new Vec3d(
-			this.x * matProj[0][0] + this.y * matProj[1][0] + this.z * matProj[2][0] + matProj[3][0],
-			this.x * matProj[0][1] + this.y * matProj[1][1] + this.z * matProj[2][1] + matProj[3][1],
-			this.x * matProj[0][2] + this.y * matProj[1][2] + this.z * matProj[2][2] + matProj[3][2]
+		return Vector.multiply(this, matProj);
+	}
+
+	get clone() {
+		return new Vector(...this);
+	}
+
+	static multiply(vector, matrix) {
+		var o = new Vector(
+			vector.x * matrix[0][0] + vector.y * matrix[1][0] + vector.z * matrix[2][0] + matrix[3][0],
+			vector.x * matrix[0][1] + vector.y * matrix[1][1] + vector.z * matrix[2][1] + matrix[3][1],
+			vector.x * matrix[0][2] + vector.y * matrix[1][2] + vector.z * matrix[2][2] + matrix[3][2]
 		);
 
-		var w = this.x * matProj[0][3] + this.y * matProj[1][3] + this.z * matProj[2][3] + matProj[3][3];
-
-		console.log(w);
+		var w = vector.x * matrix[0][3] + vector.y * matrix[1][3] + vector.z * matrix[2][3] + matrix[3][3];
 
 		if (w) {
 			o.x /= w;
@@ -74,23 +84,35 @@ class Triangle extends Array {
 		// defaults to 3 default Vec3d
 
 		if (!args.length)
-			var a = new Vec3d, b = new Vec3d, c = new Vec3d;
+			var a = new Vector, b = new Vector, c = new Vector;
 		else if (args.length > 2)
-			var [ a = new Vec3d, b = new Vec3d, c = new Vec3d ] = args;
+			var [ a = new Vector, b = new Vector, c = new Vector ] = args;
 		else if (Array.isArray(args[0]))
-			var [ a = new Vec3d, b = new Vec3d, c = new Vec3d ] = args[0];
+			var [ a = new Vector, b = new Vector, c = new Vector ] = args[0];
 		else
 			throw new TypeError(`invalid arguments, input must be 3 Vec3d objects`);
 
 		for (var vec of [ a, b, c ])
-			if (!vec || vec.constructor != Vec3d)
+			if (!vec || vec.constructor != Vector)
 				throw new TypeError("invalid arguments, input must be 3 Vec3d objects");
 		
 		super(a, b, c);
 	}
 
 	draw() {
-		var triangleTranslated = new Triangle(this);
+		var triRotatedZ = this.clone;
+
+		triRotatedZ[0] = Vector.multiply(triRotatedZ[0], matRotZ);
+		triRotatedZ[1] = Vector.multiply(triRotatedZ[1], matRotZ);
+		triRotatedZ[2] = Vector.multiply(triRotatedZ[2], matRotZ);
+
+		var triRotatedX = triRotatedZ;
+
+		triRotatedX[0] = Vector.multiply(triRotatedX[0], matRotX);
+		triRotatedX[1] = Vector.multiply(triRotatedX[1], matRotX);
+		triRotatedX[2] = Vector.multiply(triRotatedX[2], matRotX);
+
+		var triangleTranslated = triRotatedX;
 
 		triangleTranslated[0].z += 3;
 		triangleTranslated[1].z += 3;
@@ -98,26 +120,23 @@ class Triangle extends Array {
 
 		var projected = triangleTranslated.projected;
 
-		projected[0].x++;
-		projected[0].y++;
-		projected[1].x++;
-		projected[1].y++;
-		projected[2].x++;
-		projected[2].y++;
-
-		projected[0].x *= canvas.width / 2;
-		projected[0].y *= canvas.height / 2;
-		projected[1].x *= canvas.width / 2;
-		projected[1].y *= canvas.height / 2;
-		projected[2].x *= canvas.width / 2;
-		projected[2].y *= canvas.height / 2;
+		for (var i = 0; i < 3; i++) {
+			projected[i].x = (projected[i].x + 1) * canvas.width / 2;
+			projected[i].y = (projected[i].y + 1) * canvas.height / 2;
+		}
 
 		context.beginPath();
-		context.moveTo(projected[0].x, projected[0].y);
-		context.lineTo(projected[1].x, projected[1].y);
-		context.lineTo(projected[2].x, projected[2].y);
-		context.lineTo(projected[0].x, projected[0].y);
+		context.moveTo(projected[2].x, projected[2].y);
+
+		for (var i = 0; i < 3; i++) {
+			context.lineTo(projected[i].x, projected[i].y);
+		}
+
 		context.stroke();
+	}
+
+	map(...args) {
+		return [ ...this ].map(...args);
 	}
 
 	get projected() {
@@ -126,6 +145,10 @@ class Triangle extends Array {
 			this[1].projected,
 			this[2].projected
 		);
+	}
+
+	get clone() {
+		return new Triangle(...this.map(a => a.clone));
 	}
 }
 
@@ -150,23 +173,31 @@ class Mesh extends Array {
 		super(...mesh);
 	}
 
+	map(...args) {
+		return [ ...this ].map(...args);
+	}
+
 	draw() {
 		for (var tri of this)
 			tri.draw();
+	}
+
+	get clone() {
+		return new Mesh(...this.map(a => a.clone));
 	}
 }
 
 class CubeMesh extends Mesh {
 	constructor() {
 		var points = [
-			new Vec3d(0, 0, 0), // 0
-			new Vec3d(0, 0, 1), // 1
-			new Vec3d(0, 1, 0), // 2
-			new Vec3d(0, 1, 1), // 3
-			new Vec3d(1, 0, 0), // 4
-			new Vec3d(1, 0, 1), // 5
-			new Vec3d(1, 1, 0), // 6
-			new Vec3d(1, 1, 1)  // 7
+			new Vector(0, 0, 0),
+			new Vector(0, 0, 1),
+			new Vector(0, 1, 0),
+			new Vector(0, 1, 1),
+			new Vector(1, 0, 0),
+			new Vector(1, 0, 1),
+			new Vector(1, 1, 0),
+			new Vector(1, 1, 1)
 		];
 			
 		super(
@@ -213,15 +244,53 @@ var context      = canvas.getContext("2d"),
 	fFov         = 90,
 	fAspectRatio = canvas.height / canvas.width,
 	fFovRad      = Math.tan(fFov * 0.5 / 180 * Math.PI),
-	matProj      = new Mat4x4;
+	matProj      = new Mat4x4,
+	matRotZ      = new Mat4x4,
+	matRotX      = new Mat4x4;
 
-matProj[0][0] = fAspectRatio * fFovRad;
-matProj[1][1] = fFovRad;
-matProj[2][2] = fFar / (fFar - fNear);
-matProj[3][2] = (-fFar * fNear) / (fFar - fNear);
-matProj[2][3] = 1;
-matProj[3][3] = 0;
+
 
 var cube = new CubeMesh;
 
-cube.draw();
+drawLoop();
+
+function drawLoop() {
+	var fTheta = 0.001 * performance.now();
+
+	// Rotation Z
+	matRotZ[0][0] = Math.cos(fTheta);
+	matRotZ[0][1] = Math.sin(fTheta);
+	matRotZ[1][0] = -Math.sin(fTheta);
+	matRotZ[1][1] = Math.cos(fTheta);
+	matRotZ[2][2] = 1;
+	matRotZ[3][3] = 1;
+
+	// Rotation X
+	matRotX[0][0] = 1;
+	matRotX[1][1] = Math.cos(fTheta * 0.5);
+	matRotX[1][2] = Math.sin(fTheta * 0.5);
+	matRotX[2][1] = -Math.sin(fTheta * 0.5);
+	matRotX[2][2] = Math.cos(fTheta * 0.5);
+	matRotX[3][3] = 1;
+
+	// Draw Triangles
+	matProj[0][0] = fAspectRatio * fFovRad;
+	matProj[1][1] = fFovRad;
+	matProj[2][2] = fFar / (fFar - fNear);
+	matProj[3][2] = (-fFar * fNear) / (fFar - fNear);
+	matProj[2][3] = 1;
+	matProj[3][3] = 0;
+
+	context.clearRect(0, 0, canvas.width, canvas.height);
+
+	cube.draw();
+
+	setTimeout(drawLoop, 0);
+}
+
+onresize = () => {
+	canvas.height = window.innerHeight;
+	canvas.width  = window.innerWidth;
+	fAspectRatio = canvas.height / canvas.width;
+	cube.draw();
+}
