@@ -28,6 +28,17 @@ export class Vector extends Array {
 		this.z += z;
 	}
 
+	set(x, y, z) {
+		if (x != undefined)
+			this.x = x;
+
+		if (y != undefined)
+			this.y = y;
+
+		if (z != undefined)
+			this.z = z;
+	}
+
 	get x() {
 		return this[0];
 	}
@@ -212,33 +223,35 @@ export class Viewport {
 	draw(...meshes) {
 		var theta = 0.001 * performance.now(),
 		    rotXMatr = new Matrix,
-		    rotZMatr = new Matrix;
+			rotZMatr = new Matrix,
+			speedX   = 0.5,
+			speedZ   = 1;
 
 		// Rotation X
 		rotXMatr[0][0] =  1;
-		rotXMatr[1][1] =  Math.cos(theta / 2);
-		rotXMatr[1][2] =  Math.sin(theta / 2);
-		rotXMatr[2][1] = -Math.sin(theta / 2);
-		rotXMatr[2][2] =  Math.cos(theta / 2);
+		rotXMatr[1][1] =  Math.cos(theta * speedX);
+		rotXMatr[1][2] =  Math.sin(theta * speedX);
+		rotXMatr[2][1] = -Math.sin(theta * speedX);
+		rotXMatr[2][2] =  Math.cos(theta * speedX);
 		rotXMatr[3][3] =  1;
 
 		// Rotation Z
-		rotZMatr[0][0] =  Math.cos(theta);
-		rotZMatr[0][1] =  Math.sin(theta);
-		rotZMatr[1][0] = -Math.sin(theta);
-		rotZMatr[1][1] =  Math.cos(theta);
+		rotZMatr[0][0] =  Math.cos(theta * speedZ);
+		rotZMatr[0][1] =  Math.sin(theta * speedZ);
+		rotZMatr[1][0] = -Math.sin(theta * speedZ);
+		rotZMatr[1][1] =  Math.cos(theta * speedZ);
 		rotZMatr[2][2] =  1;
 		rotZMatr[3][3] =  1;
 
 		for (var mesh of meshes) {
-			var projected = mesh,
+			var projected = mesh.clone(),
 				vectors   = projected.vectors;
 
 			for (var i = 0; i < vectors.length; i++) {
-				vectors[i] = rotXMatr.multiply(vectors[i]);
-				vectors[i] = rotZMatr.multiply(vectors[i]);
+				vectors[i].set(...rotXMatr.multiply(vectors[i]));
+				vectors[i].set(...rotZMatr.multiply(vectors[i]));
 				vectors[i].translate(0, 0, 3);
-				vectors[i] = this.projMatr.multiply(vectors[i]);
+				vectors[i].set(...this.projMatr.multiply(vectors[i]));
 
 				vectors[i].x = (vectors[i].x + 1) * canvas.width / 2;
 				vectors[i].y = (vectors[i].y + 1) * canvas.height / 2;
