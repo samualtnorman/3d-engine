@@ -104,10 +104,11 @@ export class Mesh extends Array {
 	}
 
 	clone() {
-		var o       = [],
+		// TODO: replace naive clone aproach, keep vectors intact, currently clones end up with unique vectors for every tri
+		/*var o       = [],
 			vectors = this.vectors;
 		
-		for (var vector of vectors)
+		for (var vector of vectors)*/
 
 
 		return this.map(t => t.clone());
