@@ -224,9 +224,9 @@ export class Viewport {
 	draw(...meshes) {
 		var theta = 0.001 * performance.now(),
 		    rotXMatr = new Matrix,
-			rotZMatr = new Matrix,
-			speedX   = 0.5,
-			speedZ   = 1;
+		    rotZMatr = new Matrix,
+		    speedX   = 0.5,
+		    speedZ   = 1;
 
 		// Rotation X
 		rotXMatr[0][0] =  1;

@@ -6,8 +6,8 @@ canvas.width  = window.innerWidth;
 canvas.height = window.innerHeight;
 
 var viewport = new Viewport(canvas),
-	cube     = new CubeMesh,
-	context  = canvas.getContext("2d");
+    cube     = new CubeMesh,
+    context  = canvas.getContext("2d");
 
 drawLoop();
 
