@@ -1,6 +1,10 @@
 "use strict";
 
-class Vector extends Array {
+export var matProj = new Mat4x4,
+	       matRotZ = new Mat4x4,
+	       matRotX = new Mat4x4;
+
+export class Vector extends Array {
 	constructor(...args) {
 		// accepts object with x y z numbers
 		// accepts array with 3 numbers
@@ -77,7 +81,7 @@ class Vector extends Array {
 	}
 }
 
-class Triangle extends Array {
+export class Triangle extends Array {
 	constructor(...args) {
 		// accepts array of 3 Vec3ds
 		// accepts 3 Vec3ds
@@ -152,7 +156,7 @@ class Triangle extends Array {
 	}
 }
 
-class Mesh extends Array {
+export class Mesh extends Array {
 	constructor(...args) {
 		// accepts array of triangles
 		// accepts triangles
@@ -187,7 +191,7 @@ class Mesh extends Array {
 	}
 }
 
-class CubeMesh extends Mesh {
+export class CubeMesh extends Mesh {
 	constructor() {
 		var points = [
 			new Vector(0, 0, 0),
@@ -229,68 +233,13 @@ class CubeMesh extends Mesh {
 	}
 }
 
-class Mat4x4 extends Array {
+export class Mat4x4 extends Array {
 	constructor() {
 		super([ 0, 0, 0, 0 ], [ 0, 0, 0, 0 ], [ 0, 0, 0, 0 ], [ 0, 0, 0, 0 ]);
 	}
 }
 
-canvas.height = window.innerHeight;
-canvas.width  = window.innerWidth;
-
-var context      = canvas.getContext("2d"),
-	fNear        = 0.1,
-	fFar         = 1000,
-	fFov         = 90,
-	fAspectRatio = canvas.height / canvas.width,
-	fFovRad      = Math.tan(fFov * 0.5 / 180 * Math.PI),
-	matProj      = new Mat4x4,
-	matRotZ      = new Mat4x4,
-	matRotX      = new Mat4x4;
-
-
-
-var cube = new CubeMesh;
-
-drawLoop();
-
-function drawLoop() {
-	var fTheta = 0.001 * performance.now();
-
-	// Rotation Z
-	matRotZ[0][0] = Math.cos(fTheta);
-	matRotZ[0][1] = Math.sin(fTheta);
-	matRotZ[1][0] = -Math.sin(fTheta);
-	matRotZ[1][1] = Math.cos(fTheta);
-	matRotZ[2][2] = 1;
-	matRotZ[3][3] = 1;
-
-	// Rotation X
-	matRotX[0][0] = 1;
-	matRotX[1][1] = Math.cos(fTheta * 0.5);
-	matRotX[1][2] = Math.sin(fTheta * 0.5);
-	matRotX[2][1] = -Math.sin(fTheta * 0.5);
-	matRotX[2][2] = Math.cos(fTheta * 0.5);
-	matRotX[3][3] = 1;
-
-	// Draw Triangles
-	matProj[0][0] = fAspectRatio * fFovRad;
-	matProj[1][1] = fFovRad;
-	matProj[2][2] = fFar / (fFar - fNear);
-	matProj[3][2] = (-fFar * fNear) / (fFar - fNear);
-	matProj[2][3] = 1;
-	matProj[3][3] = 0;
-
-	context.clearRect(0, 0, canvas.width, canvas.height);
-
-	cube.draw();
-
-	setTimeout(drawLoop, 0);
-}
-
-onresize = () => {
-	canvas.height = window.innerHeight;
-	canvas.width  = window.innerWidth;
-	fAspectRatio = canvas.height / canvas.width;
-	cube.draw();
+function frameLoop() {
+	typeof drawLoop == "funtion" && drawLoop();
+	setTimeout(frameLoop, 0);
 }
