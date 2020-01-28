@@ -5,6 +5,4 @@ import { CubeMesh, Viewport } from "./modules/3d_engine.mjs";
 var viewport = new Viewport(canvas),
 	cube = new CubeMesh;
 
-console.log(cube);
-
 viewport.draw(cube);

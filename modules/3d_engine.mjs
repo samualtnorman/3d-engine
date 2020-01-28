@@ -22,10 +22,6 @@ export class Vector extends Array {
 		return new Vector(...this);
 	}
 
-	multiply(matrix) {
-		return Vector.multiply(this, matrix)
-	}
-
 	translate(x, y, z) {
 		this.x += x;
 		this.y += y;
@@ -67,11 +63,6 @@ export class Triangle extends Array {
 		return this.map(v => v.clone());
 	}
 
-	multiply(matrix) {
-		for (var i = 0; i < 3; i++)
-			this[i] = matrix.multiply(this[i]);
-	}
-
 	translate(x, y, z) {
 		for (var vector of this)
 			vector.translate(x, y, z)
@@ -83,6 +74,12 @@ export class Triangle extends Array {
 
 		for (var vector of this)
 			context.lineTo(vector.x, vector.y)
+		
+		context.stroke();
+	}
+
+	map(...args) {
+		return new Triangle(...[ ...this ].map(...args));
 	}
 }
 
@@ -96,16 +93,23 @@ export class Mesh extends Array {
 	}
 
 	clone() {
+		var o       = [],
+			vectors = this.vectors;
+		
+		for (var vector of vectors)
+
+
 		return this.map(t => t.clone());
 	}
 
 	draw(context) {
-		for (var vector of this)
-			vector.draw(context);
+		for (var tri of this)
+			tri.draw(context);
 	}
 
-	translate() {
-
+	translate(x, y, z) {
+		for (var vector of this.vectors)
+			vector.translate(x, y, z);
 	}
 
 	get vectors() {
@@ -169,12 +173,11 @@ export class Matrix extends Array {
 
 	multiply(vector) {
 		var o = new Vector(
-			vector.x * this[0][0] + vector.y * this[1][0] + vector.z * this[2][0] + this[3][0],
-			vector.x * this[0][1] + vector.y * this[1][1] + vector.z * this[2][1] + this[3][1],
-			vector.x * this[0][2] + vector.y * this[1][2] + vector.z * this[2][2] + this[3][2]
-		);
-
-		var w = vector.x * this[0][3] + vector.y * this[1][3] + vector.z * this[2][3] + this[3][3];
+				vector.x * this[0][0] + vector.y * this[1][0] + vector.z * this[2][0] + this[3][0],
+				vector.x * this[0][1] + vector.y * this[1][1] + vector.z * this[2][1] + this[3][1],
+				vector.x * this[0][2] + vector.y * this[1][2] + vector.z * this[2][2] + this[3][2]
+			),
+		    w = vector.x * this[0][3] + vector.y * this[1][3] + vector.z * this[2][3] + this[3][3];
 
 		if (w) {
 			o.x /= w;
@@ -194,20 +197,54 @@ export class Viewport {
 	constructor(canvas) {
 		this.aspectRatio = canvas.height / canvas.width;
 		this.fovRad      = 1 / Math.tan(this.fov * 0.5 / 180 * Math.PI);
-		this.projectMatr = new Matrix;
+		this.projMatr = new Matrix;
 		this.canvas      = canvas;
 		this.context     = canvas.getContext("2d");
 
-		this.projectMatr[0][0] = this.aspectRatio * this.fovRad;
-		this.projectMatr[1][1] = this.fovRad;
-		this.projectMatr[2][2] = this.far / (this.far - this.near);
-		this.projectMatr[3][2] = (-this.far * this.near) / (this.far - this.near);
-		this.projectMatr[2][3] = 1;
-		this.projectMatr[3][3] = 0;
+		this.projMatr[0][0] = this.aspectRatio * this.fovRad;
+		this.projMatr[1][1] = this.fovRad;
+		this.projMatr[2][2] = this.far / (this.far - this.near);
+		this.projMatr[3][2] = (-this.far * this.near) / (this.far - this.near);
+		this.projMatr[2][3] = 1;
+		this.projMatr[3][3] = 0;
 	}
 
 	draw(...meshes) {
-		for (var mesh of meshes)
-			mesh.draw(this.context);
+		var theta = 0.001 * performance.now(),
+		    rotXMatr = new Matrix,
+		    rotZMatr = new Matrix;
+
+		// Rotation X
+		rotXMatr[0][0] =  1;
+		rotXMatr[1][1] =  Math.cos(theta / 2);
+		rotXMatr[1][2] =  Math.sin(theta / 2);
+		rotXMatr[2][1] = -Math.sin(theta / 2);
+		rotXMatr[2][2] =  Math.cos(theta / 2);
+		rotXMatr[3][3] =  1;
+
+		// Rotation Z
+		rotZMatr[0][0] =  Math.cos(theta);
+		rotZMatr[0][1] =  Math.sin(theta);
+		rotZMatr[1][0] = -Math.sin(theta);
+		rotZMatr[1][1] =  Math.cos(theta);
+		rotZMatr[2][2] =  1;
+		rotZMatr[3][3] =  1;
+
+		for (var mesh of meshes) {
+			var projected = mesh,
+				vectors   = projected.vectors;
+
+			for (var i = 0; i < vectors.length; i++) {
+				vectors[i] = rotXMatr.multiply(vectors[i]);
+				vectors[i] = rotZMatr.multiply(vectors[i]);
+				vectors[i].translate(0, 0, 3);
+				vectors[i] = this.projMatr.multiply(vectors[i]);
+
+				vectors[i].x = (vectors[i].x + 1) * canvas.width / 2;
+				vectors[i].y = (vectors[i].y + 1) * canvas.height / 2;
+			}
+
+			projected.draw(this.context);
+		}
 	}
 }
