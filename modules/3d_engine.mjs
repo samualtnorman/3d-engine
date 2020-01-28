@@ -22,12 +22,8 @@ export class Vector extends Array {
 		return new Vector(...this);
 	}
 
-	project() {
-		return Vector.multiply(this, matProj);
-	}
-
 	multiply(matrix) {
-
+		return Vector.multiply(this, matrix)
 	}
 
 	get x() {
@@ -50,24 +46,6 @@ export class Vector extends Array {
 	set z(z) {
 		return (this[2] = z);
 	}
-
-	static multiply(vector, matrix) {
-		var o = new Vector(
-			vector.x * matrix[0][0] + vector.y * matrix[1][0] + vector.z * matrix[2][0] + matrix[3][0],
-			vector.x * matrix[0][1] + vector.y * matrix[1][1] + vector.z * matrix[2][1] + matrix[3][1],
-			vector.x * matrix[0][2] + vector.y * matrix[1][2] + vector.z * matrix[2][2] + matrix[3][2]
-		);
-
-		var w = vector.x * matrix[0][3] + vector.y * matrix[1][3] + vector.z * matrix[2][3] + matrix[3][3];
-
-		if (w) {
-			o.x /= w;
-			o.y /= w;
-			o.z /= w;
-		}
-
-		return o;
-	}
 }
 
 export class Triangle extends Array {
@@ -83,8 +61,25 @@ export class Triangle extends Array {
 		return this.map(v => v.clone());
 	}
 
-	project() {
-		return this.map(v => v.project());
+	multiply(matrix) {
+		for (var i = 0; i < 3; i++)
+			this[i] = matrix.multiply(this[i]);
+	}
+
+	translate(x, y, z) {
+		for (var i = 0; i < 3; i++) {
+			this[i].x += x;
+			this[i].y += y;
+			this[i].z += z;
+		}
+	}
+
+	draw() {
+		context.beginPath();
+		context.moveTo(this[2].x, this[2].y);
+
+		for (var vector of this)
+			context.lineTo(vector.x, vector.y)
 	}
 }
 
@@ -99,6 +94,10 @@ export class Mesh extends Array {
 
 	clone() {
 		return this.map(t => t.clone());
+	}
+
+	draw() {
+
 	}
 }
 
@@ -141,5 +140,54 @@ export class CubeMesh extends Mesh {
 			new Triangle(points[0b101], points[0b000], points[0b100])
 		);
 
+	}
+}
+
+export class Matrix extends Array {
+	constructor() {
+		super([ 0, 0, 0, 0 ], [ 0, 0, 0, 0 ], [ 0, 0, 0, 0 ], [ 0, 0, 0, 0 ]);
+	}
+
+	multiply(vector) {
+		var o = new Vector(
+			vector.x * this[0][0] + vector.y * this[1][0] + vector.z * this[2][0] + this[3][0],
+			vector.x * this[0][1] + vector.y * this[1][1] + vector.z * this[2][1] + this[3][1],
+			vector.x * this[0][2] + vector.y * this[1][2] + vector.z * this[2][2] + this[3][2]
+		);
+
+		var w = vector.x * this[0][3] + vector.y * this[1][3] + vector.z * this[2][3] + this[3][3];
+
+		if (w) {
+			o.x /= w;
+			o.y /= w;
+			o.z /= w;
+		}
+
+		return o;
+	}
+}
+
+export class Viewport {
+	near = 0.1
+	far  = 1000
+	fov  = 90
+	
+	constructor(canvas) {
+		this.aspectRatio = canvas.height / canvas.width;
+		this.fovRad      = 1 / Math.tan(this.fov * 0.5 / 180 * Math.PI);
+		this.projMatr    = new Matrix;
+		this.targCanvas  = canvas;
+
+		this.projMatr[0][0] = this.aspectRatio * this.fovRad;
+		this.projMatr[1][1] = this.fovRad;
+		this.projMatr[2][2] = this.far / (this.far - this.near);
+		this.projMatr[3][2] = (-this.far * this.near) / (this.far - this.near);
+		this.projMatr[2][3] = 1;
+		this.projMatr[3][3] = 0;
+	}
+
+	draw(...meshes) {
+		for (var mesh of meshes)
+			mesh.draw();
 	}
 }
