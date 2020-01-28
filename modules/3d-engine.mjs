@@ -1,9 +1,5 @@
 "use strict";
 
-export var matProj = new Mat4x4,
-	       matRotZ = new Mat4x4,
-	       matRotX = new Mat4x4;
-
 export class Vector extends Array {
 	constructor(...args) {
 		// accepts object with x y z numbers
@@ -54,7 +50,7 @@ export class Vector extends Array {
 		return (this[2] = z);
 	}
 
-	get projected() {
+	project() {
 		return Vector.multiply(this, matProj);
 	}
 
@@ -239,7 +235,6 @@ export class Mat4x4 extends Array {
 	}
 }
 
-function frameLoop() {
-	typeof drawLoop == "funtion" && drawLoop();
-	setTimeout(frameLoop, 0);
-}
+var matProj = new Mat4x4,
+    matRotZ = new Mat4x4,
+    matRotX = new Mat4x4;
