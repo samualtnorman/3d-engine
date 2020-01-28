@@ -1,8 +1,10 @@
 "use strict";
 
-import Engine, { CubeMesh } from "./modules/3d_engine.mjs";
+import { CubeMesh, Viewport } from "./modules/3d_engine.mjs";
 
-var cube = new CubeMesh;
+var viewport = new Viewport(canvas),
+	cube = new CubeMesh;
 
-//cube.draw();
-console.log(Engine);
+console.log(cube);
+
+viewport.draw(cube);
