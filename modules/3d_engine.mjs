@@ -1,6 +1,6 @@
 "use strict";
 
-class Vector extends Array {
+export class Vector extends Array {
 	constructor(x = 0, y = 0, z = 0) {
 		super(x, y, z);
 
@@ -70,7 +70,7 @@ class Vector extends Array {
 	}
 }
 
-class Triangle extends Array {
+export class Triangle extends Array {
 	constructor(a = new Vector, b = new Vector, c = new Vector) {
 		super(a, b, c);
 
@@ -85,5 +85,61 @@ class Triangle extends Array {
 
 	project() {
 		return this.map(v => v.project());
+	}
+}
+
+export class Mesh extends Array {
+	constructor(...tris) {
+		super(...tris);
+
+		for (var tri of this)
+			if (tri.constructor != Triangle)
+				throw new TypeError(`"${tri}" is not a triangle`);
+	}
+
+	clone() {
+		return this.map(t => t.clone());
+	}
+}
+
+export class CubeMesh extends Mesh {
+	constructor() {
+		var points = [
+			new Vector(0, 0, 0),
+			new Vector(0, 0, 1),
+			new Vector(0, 1, 0),
+			new Vector(0, 1, 1),
+			new Vector(1, 0, 0),
+			new Vector(1, 0, 1),
+			new Vector(1, 1, 0),
+			new Vector(1, 1, 1)
+		];
+			
+		super(
+			// South Face
+			new Triangle(points[0b000], points[0b010], points[0b110]),
+			new Triangle(points[0b000], points[0b110], points[0b100]),
+			
+			// East Face
+			new Triangle(points[0b100], points[0b110], points[0b111]),
+			new Triangle(points[0b100], points[0b111], points[0b101]),
+			
+			// North Face
+			new Triangle(points[0b101], points[0b111], points[0b011]),
+			new Triangle(points[0b101], points[0b011], points[0b001]),
+			
+			// West Face
+			new Triangle(points[0b001], points[0b011], points[0b010]),
+			new Triangle(points[0b001], points[0b010], points[0b000]),
+			
+			// Top Face
+			new Triangle(points[0b010], points[0b011], points[0b111]),
+			new Triangle(points[0b010], points[0b111], points[0b110]),
+			
+			// Bottom Face
+			new Triangle(points[0b101], points[0b001], points[0b000]),
+			new Triangle(points[0b101], points[0b000], points[0b100])
+		);
+
 	}
 }
