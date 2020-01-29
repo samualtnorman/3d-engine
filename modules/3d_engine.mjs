@@ -4,14 +4,7 @@ export class Vector extends Array {
 	constructor(x = 0, y = 0, z = 0) {
 		super(x, y, z);
 
-		for (var i = 0; i < 3; i++) {
-			var number = Number(this[i]);
-
-			if (isNaN(number))
-				throw new TypeError(`"${this[i]}" cannot be converted to number`);
-
-			this[i] = number;
-		}
+		this.verify();
 	}
 
 	toObject() {
@@ -26,6 +19,10 @@ export class Vector extends Array {
 		this.x += x;
 		this.y += y;
 		this.z += z;
+
+		this.verify();
+
+		return this;
 	}
 
 	set(x, y, z) {
@@ -37,6 +34,21 @@ export class Vector extends Array {
 
 		if (z != undefined)
 			this.z = z;
+		
+		this.verify();
+		
+		return this;
+	}
+
+	verify() {
+		for (var i = 0; i < 3; i++) {
+			var number = Number(this[i]);
+
+			if (isNaN(number))
+				throw new TypeError(`"${this[i]}" cannot be converted to number`);
+
+			this[i] = number;
+		}
 	}
 
 	get x() {
@@ -104,14 +116,10 @@ export class Mesh extends Array {
 	}
 
 	clone() {
-		// TODO: replace naive clone aproach, keep vectors intact, currently clones end up with unique vectors for every tri
-		/*var o       = [],
-			vectors = this.vectors;
-		
-		for (var vector of vectors)*/
+		var originalVectors = this.vectors,
+			newVectors      = originalVectors.map(v => v.clone());
 
-
-		return this.map(t => t.clone());
+		return this.map(t => t.map(v => newVectors[originalVectors.indexOf(v)]));
 	}
 
 	draw(context) {
@@ -139,13 +147,13 @@ export class Mesh extends Array {
 export class CubeMesh extends Mesh {
 	constructor() {
 		var points = [
-			new Vector(0, 0, 0),
-			new Vector(0, 0, 1),
-			new Vector(0, 1, 0),
-			new Vector(0, 1, 1),
-			new Vector(1, 0, 0),
-			new Vector(1, 0, 1),
-			new Vector(1, 1, 0),
+			new Vector(-1, -1, -1),
+			new Vector(-1, -1, 1),
+			new Vector(-1, 1, -1),
+			new Vector(-1, 1, 1),
+			new Vector(1, -1, -1),
+			new Vector(1, -1, 1),
+			new Vector(1, 1, -1),
 			new Vector(1, 1, 1)
 		];
 			
@@ -218,29 +226,29 @@ export class Viewport {
 		this.projMatr[2][2] = this.far / (this.far - this.near);
 		this.projMatr[3][2] = (-this.far * this.near) / (this.far - this.near);
 		this.projMatr[2][3] = 1;
-		this.projMatr[3][3] = 0;
+
+		this.speedX = Math.random() * 2 - 1;
+		this.speedZ = Math.random() * 2 - 1;
 	}
 
 	draw(...meshes) {
 		var theta = 0.001 * performance.now(),
 		    rotXMatr = new Matrix,
-		    rotZMatr = new Matrix,
-		    speedX   = 0.5,
-		    speedZ   = 1;
+		    rotZMatr = new Matrix;
 
 		// Rotation X
 		rotXMatr[0][0] =  1;
-		rotXMatr[1][1] =  Math.cos(theta * speedX);
-		rotXMatr[1][2] =  Math.sin(theta * speedX);
-		rotXMatr[2][1] = -Math.sin(theta * speedX);
-		rotXMatr[2][2] =  Math.cos(theta * speedX);
+		rotXMatr[1][1] =  Math.cos(theta * this.speedX);
+		rotXMatr[1][2] =  Math.sin(theta * this.speedX);
+		rotXMatr[2][1] = -Math.sin(theta * this.speedX);
+		rotXMatr[2][2] =  Math.cos(theta * this.speedX);
 		rotXMatr[3][3] =  1;
 
 		// Rotation Z
-		rotZMatr[0][0] =  Math.cos(theta * speedZ);
-		rotZMatr[0][1] =  Math.sin(theta * speedZ);
-		rotZMatr[1][0] = -Math.sin(theta * speedZ);
-		rotZMatr[1][1] =  Math.cos(theta * speedZ);
+		rotZMatr[0][0] =  Math.cos(theta * this.speedZ);
+		rotZMatr[0][1] =  Math.sin(theta * this.speedZ);
+		rotZMatr[1][0] = -Math.sin(theta * this.speedZ);
+		rotZMatr[1][1] =  Math.cos(theta * this.speedZ);
 		rotZMatr[2][2] =  1;
 		rotZMatr[3][3] =  1;
 
@@ -249,13 +257,15 @@ export class Viewport {
 				vectors   = projected.vectors;
 
 			for (var i = 0; i < vectors.length; i++) {
-				vectors[i].set(...rotXMatr.multiply(vectors[i]));
-				vectors[i].set(...rotZMatr.multiply(vectors[i]));
-				vectors[i].translate(0, 0, 3);
-				vectors[i].set(...this.projMatr.multiply(vectors[i]));
-
-				vectors[i].x = (vectors[i].x + 1) * canvas.width / 2;
-				vectors[i].y = (vectors[i].y + 1) * canvas.height / 2;
+				vectors[i]
+					.set(...rotXMatr.multiply(vectors[i]))
+					.set(...rotZMatr.multiply(vectors[i]))
+					.translate(0, 0, 3)
+					.set(...this.projMatr.multiply(vectors[i]))
+					.set(
+						(vectors[i].x + 1) * canvas.width / 2,
+						(vectors[i].y + 1) * canvas.height / 2
+					);
 			}
 
 			projected.draw(this.context);
