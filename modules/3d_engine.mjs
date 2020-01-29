@@ -123,6 +123,8 @@ export class Mesh extends Array {
 	}
 
 	draw(context) {
+		//.clone().sort((a, b) => b.reduce((a, c) => a + c.z) / 3 - a.reduce((a, c) => a + c.z) / 3)
+
 		for (var tri of this)
 			tri.draw(context);
 	}
@@ -229,9 +231,20 @@ export class Viewport {
 
 		this.speedX = Math.random() * 2 - 1;
 		this.speedZ = Math.random() * 2 - 1;
+
+		this.time = Math.round(Date.now() / 1000);
+		this.frames = 0;
 	}
 
 	draw(...meshes) {
+		this.frames++;
+
+		if (this.time < Math.round(Date.now() / 1000)) {
+			console.log(this.frames);
+			this.frames = 0;
+			this.time = Math.round(Date.now() / 1000);
+		}
+
 		var theta = 0.001 * performance.now(),
 		    rotXMatr = new Matrix,
 		    rotZMatr = new Matrix;

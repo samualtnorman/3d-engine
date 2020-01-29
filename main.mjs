@@ -13,8 +13,6 @@ drawLoop();
 
 function drawLoop() {
 	context.clearRect(0, 0, canvas.width, canvas.height);
-
 	viewport.draw(cube);
-
 	setTimeout(drawLoop, 0);
 }
