@@ -118,6 +118,10 @@ export class Triangle extends Array {
 			for (var vector of this)
 				context.lineTo(vector.x, vector.y)
 			
+			context.fillStyle = "green";
+			context.strokeStyle = "black";
+
+			context.fill();
 			context.stroke();
 		}
 	}
@@ -230,26 +234,32 @@ export class Matrix extends Array {
 	}
 }
 
-export class Viewport {
-	near = 0.1
-	far  = 1000
-	fov  = 90
+export class Camera {
+	near     = 0.1
+	far      = 1000
+	projMatr = new Matrix
 	
 	constructor(canvas) {
-		this.aspectRatio = canvas.height / canvas.width;
-		this.fovRad      = 1 / Math.tan(this.fov * 0.5 / 180 * Math.PI);
-		this.projMatr = new Matrix;
+		canvas.onresize = this.onresize;
+
 		this.canvas      = canvas;
 		this.context     = canvas.getContext("2d");
+		this.fov = 90;
 
-		this.projMatr[0][0] = this.aspectRatio * this.fovRad;
-		this.projMatr[1][1] = this.fovRad;
-		this.projMatr[2][2] = this.far / (this.far - this.near);
-		this.projMatr[3][2] = (-this.far * this.near) / (this.far - this.near);
-		this.projMatr[2][3] = 1;
+		this.onresize();
 	}
 
 	draw(...meshes) {
+		if (this.modified) {
+			this.projMatr[0][0] = this.aspectRatio * this.fovRad;
+			this.projMatr[1][1] = this.fovRad;
+			this.projMatr[2][2] = this.far / (this.far - this.near);
+			this.projMatr[3][2] = (-this.far * this.near) / (this.far - this.near);
+			this.projMatr[2][3] = 1;
+
+			this.modified = false;
+		}
+
 		for (var mesh of meshes) {
 			var projected = mesh.clone(),
 				vectors   = projected.vectors;
@@ -266,5 +276,15 @@ export class Viewport {
 
 			projected.draw(this.context);
 		}
+	}
+
+	onresize() {
+		this.aspectRatio = canvas.height / canvas.width;
+		this.modified = true;
+	}
+
+	set fov(deg) {
+		this.fovRad = 1 / Math.tan(deg * 0.5 / 180 * Math.PI);
+		this.modified = true;
 	}
 }

@@ -1,15 +1,14 @@
 "use strict";
 
-import { CubeMesh, Viewport, Matrix } from "./modules/3d_engine.mjs";
+import { CubeMesh, Camera, Matrix } from "./modules/3d_engine.mjs";
 
-canvas.width  = window.innerWidth;
-canvas.height = window.innerHeight;
-
-var viewport = new Viewport(canvas),
+var camera = new Camera(canvas),
     cube     = new CubeMesh,
 	context  = canvas.getContext("2d"),
-	speedX   = (Math.random() * 2 - 1) * 0.01,
-	speedZ   = (Math.random() * 2 - 1) * 0.01;
+	speedX   = (Math.random() * 2 - 1) * 0.02,
+	speedZ   = (Math.random() * 2 - 1) * 0.02;
+
+console.log(camera);
 
 drawLoop();
 
@@ -42,6 +41,11 @@ function drawLoop() {
 	}
 
 	context.clearRect(0, 0, canvas.width, canvas.height);
-	viewport.draw(cube);
+	camera.draw(cube);
 	setTimeout(drawLoop, 0);
+}
+
+onresize = function () {
+	canvas.width  = window.innerWidth;
+	canvas.height = window.innerHeight;
 }
