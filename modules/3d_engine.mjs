@@ -159,8 +159,8 @@ export class Mesh extends Array {
 
 	rotate(x, y, z) {
 		var rotXMatr = new Matrix4x4,
-			rotZMatr = new Matrix4x4,
-			rotYMatr = new Matrix4x4;
+			rotYMatr = new Matrix4x4,
+			rotZMatr = new Matrix4x4;
 
 		// Rotation X
 		rotXMatr[0][0] =  1;
@@ -172,10 +172,10 @@ export class Mesh extends Array {
 
 		// Rotation Y
 		rotYMatr[0][0] =  Math.cos(y);
-		rotYMatr[2][0] =  Math.sin(y);
 		rotYMatr[0][2] = -Math.sin(y);
-		rotYMatr[2][2] =  Math.cos(y);
 		rotYMatr[1][1] =  1;
+		rotYMatr[2][0] =  Math.sin(y);
+		rotYMatr[2][2] =  Math.cos(y);
 		rotYMatr[3][3] =  1;
 
 		// Rotation Z
@@ -188,12 +188,11 @@ export class Mesh extends Array {
 
 		var vectors = this.vectors;
 
-		for (var i = 0; i < vectors.length; i++) {
-			vectors[i]
-				.set(...rotXMatr.multiply(vectors[i]))
-				.set(...rotYMatr.multiply(vectors[i]))
-				.set(...rotZMatr.multiply(vectors[i]))
-		}
+		for (var vector of vectors)
+			vector
+				.set(...rotXMatr.multiply(vector))
+				.set(...rotYMatr.multiply(vector))
+				.set(...rotZMatr.multiply(vector));
 
 		return this;
 	}
@@ -203,23 +202,26 @@ export class Mesh extends Array {
 
 		for (var triangle of this)
 			for (var vector of triangle)
-				if (!o.includes(vector))
-					o.push(vector);
+				!o.includes(vector) && o.push(vector);
 		
 		return o;
+	}
+
+	static FromObj() {
+		
 	}
 }
 
 export class CubeMesh extends Mesh {
 	constructor() {
 		var points = [
-			new Vector(-1, -1, -1),
-			new Vector(-1, -1, 1),
-			new Vector(-1, 1, -1),
-			new Vector(-1, 1, 1),
-			new Vector(1, -1, -1),
-			new Vector(1, -1, 1),
-			new Vector(1, 1, -1),
+			new Vector(0, 0, 0),
+			new Vector(0, 0, 1),
+			new Vector(0, 1, 0),
+			new Vector(0, 1, 1),
+			new Vector(1, 0, 0),
+			new Vector(1, 0, 1),
+			new Vector(1, 1, 0),
 			new Vector(1, 1, 1)
 		];
 			
