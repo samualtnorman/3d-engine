@@ -135,9 +135,9 @@ export class Mesh extends Array {
 	constructor(...tris) {
 		super(...tris);
 
-		for (var tri of this)
+		/*for (var tri of tris)
 			if (tri.constructor != Triangle)
-				throw new TypeError(`"${tri}" is not a triangle`);
+				throw new TypeError(`"${tri}" is not a triangle`);*/
 	}
 
 	clone() {
@@ -205,10 +205,6 @@ export class Mesh extends Array {
 				!o.includes(vector) && o.push(vector);
 		
 		return o;
-	}
-
-	static FromObj() {
-		
 	}
 }
 
@@ -303,7 +299,7 @@ export class Camera {
 
 			for (var vector of meshClone.vectors)
 				vector
-					.translate(0, 0, 3)
+					.translate(0, 0, 5)
 					.set(...projMatr.multiply(vector))
 					.set(
 						(vector.x + 1) * this.canvas.width / 2,
