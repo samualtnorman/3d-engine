@@ -281,6 +281,7 @@ export class Camera {
 	onresize() {
 		this.aspectRatio = canvas.height / canvas.width;
 		this.modified = true;
+		console.log("!");
 	}
 
 	set fov(deg) {
