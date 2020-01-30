@@ -16,6 +16,8 @@ onresize = function () {
 	canvas.height = window.innerHeight;
 }
 
+console.log(speedX, speedY, speedZ);
+
 onresize();
 drawLoop();
 

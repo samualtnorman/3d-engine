@@ -158,9 +158,9 @@ export class Mesh extends Array {
 	}
 
 	rotate(x, y, z) {
-		var rotXMatr = new Matrix,
-			rotZMatr = new Matrix,
-			rotYMatr = new Matrix;
+		var rotXMatr = new Matrix4x4,
+			rotZMatr = new Matrix4x4,
+			rotYMatr = new Matrix4x4;
 
 		// Rotation X
 		rotXMatr[0][0] =  1;
@@ -252,7 +252,7 @@ export class CubeMesh extends Mesh {
 	}
 }
 
-export class Matrix extends Array {
+export class Matrix4x4 extends Array {
 	constructor() {
 		super([ 0, 0, 0, 0 ], [ 0, 0, 0, 0 ], [ 0, 0, 0, 0 ], [ 0, 0, 0, 0 ]);
 	}
@@ -278,7 +278,7 @@ export class Matrix extends Array {
 export class Camera {
 	near     = 0.1
 	far      = 1000
-	projMatr = new Matrix
+	projMatr = new Matrix4x4
 	
 	constructor(canvas) {
 		this.canvas  = canvas;
@@ -287,32 +287,32 @@ export class Camera {
 	}
 
 	draw(...meshes) {
-		var aspectRatio = canvas.height / canvas.width,
-			fovRad = 1 / Math.tan(this.fov * 0.5 / 180 * Math.PI);
+		var aspectRatio = this.canvas.height / this.canvas.width,
+			projMatr    = new Matrix4x4;
 		
-		this.projMatr[0][0] = aspectRatio * fovRad;
-		this.projMatr[1][1] = fovRad;
-		this.projMatr[2][2] = this.far / (this.far - this.near);
-		this.projMatr[3][2] = (-this.far * this.near) / (this.far - this.near);
-		this.projMatr[2][3] = 1;
-
-		this.modified = false;
+		projMatr[0][0] = aspectRatio * this.fovRad;
+		projMatr[1][1] = this.fovRad;
+		projMatr[2][2] = this.far / (this.far - this.near);
+		projMatr[3][2] = (-this.far * this.near) / (this.far - this.near);
+		projMatr[2][3] = 1;
 
 		for (var mesh of meshes) {
-			var projected = mesh.clone(),
-				vectors   = projected.vectors;
-			
-			for (var i = 0; i < vectors.length; i++) {
-				vectors[i]
-					.translate(0, 0, 3)
-					.set(...this.projMatr.multiply(vectors[i]))
-					.set(
-						(vectors[i].x + 1) * canvas.width / 2,
-						(vectors[i].y + 1) * canvas.height / 2
-					);
-			}
+			var meshClone = mesh.clone();
 
-			projected.draw(this.context);
+			for (var vector of meshClone.vectors)
+				vector
+					.translate(0, 0, 3)
+					.set(...projMatr.multiply(vector))
+					.set(
+						(vector.x + 1) * this.canvas.width / 2,
+						(vector.y + 1) * this.canvas.height / 2
+					);
+
+			meshClone.draw(this.context);
 		}
+	}
+
+	set fov(fov) {
+		this.fovRad = 1 / Math.tan(fov * 0.5 / 180 * Math.PI);
 	}
 }
