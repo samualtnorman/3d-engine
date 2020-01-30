@@ -92,13 +92,38 @@ export class Triangle extends Array {
 	}
 
 	draw(context) {
-		context.beginPath();
-		context.moveTo(this[2].x, this[2].y);
-
-		for (var vector of this)
-			context.lineTo(vector.x, vector.y)
+		var line1 = new Vector(
+				this[1].x - this[0].x,
+				this[1].y - this[0].y,
+				this[1].z - this[0].z
+			),
+			line2 = new Vector(
+				this[2].x - this[0].x,
+				this[2].y - this[0].y,
+				this[2].z - this[0].z
+			),
+			normal = new Vector(
+				line1.y * line2.z - line1.z * line2.y,
+				line1.z * line2.x - line1.x * line2.z,
+				line1.x * line2.y - line1.y * line2.x,
+			),
+			l = Math.sqrt(normal.x ** 2 + normal.y ** 2 + normal.z ** 2);
 		
-		context.stroke();
+		normal.set(normal.x / l, normal.y / l, normal.z / l);
+		
+		if (normal.z < 0) {
+			context.beginPath();
+			context.moveTo(this[2].x, this[2].y);
+
+			for (var vector of this)
+				context.lineTo(vector.x, vector.y)
+			
+			context.fillStyle = "green";
+			context.strokeStyle = "black";
+
+			context.fill();
+			context.stroke();
+		}
 	}
 
 	map(...args) {
@@ -211,68 +236,38 @@ export class Matrix extends Array {
 	}
 }
 
-export class Viewport {
-	near = 0.1
-	far  = 1000
-	fov  = 90
+export class Camera {
+	near     = 0.1
+	far      = 1000
+	projMatr = new Matrix
 	
 	constructor(canvas) {
-		this.aspectRatio = canvas.height / canvas.width;
-		this.fovRad      = 1 / Math.tan(this.fov * 0.5 / 180 * Math.PI);
-		this.projMatr = new Matrix;
+		canvas.onresize = this.onresize;
+
 		this.canvas      = canvas;
 		this.context     = canvas.getContext("2d");
+		this.fov = 90;
 
-		this.projMatr[0][0] = this.aspectRatio * this.fovRad;
-		this.projMatr[1][1] = this.fovRad;
-		this.projMatr[2][2] = this.far / (this.far - this.near);
-		this.projMatr[3][2] = (-this.far * this.near) / (this.far - this.near);
-		this.projMatr[2][3] = 1;
-
-		this.speedX = Math.random() * 2 - 1;
-		this.speedZ = Math.random() * 2 - 1;
-
-		this.time = Math.round(Date.now() / 1000);
-		this.frames = 0;
+		this.onresize();
 	}
 
 	draw(...meshes) {
-		this.frames++;
+		if (this.modified) {
+			this.projMatr[0][0] = this.aspectRatio * this.fovRad;
+			this.projMatr[1][1] = this.fovRad;
+			this.projMatr[2][2] = this.far / (this.far - this.near);
+			this.projMatr[3][2] = (-this.far * this.near) / (this.far - this.near);
+			this.projMatr[2][3] = 1;
 
-		if (this.time < Math.round(Date.now() / 1000)) {
-			console.log(this.frames);
-			this.frames = 0;
-			this.time = Math.round(Date.now() / 1000);
+			this.modified = false;
 		}
-
-		var theta = 0.001 * performance.now(),
-		    rotXMatr = new Matrix,
-		    rotZMatr = new Matrix;
-
-		// Rotation X
-		rotXMatr[0][0] =  1;
-		rotXMatr[1][1] =  Math.cos(theta * this.speedX);
-		rotXMatr[1][2] =  Math.sin(theta * this.speedX);
-		rotXMatr[2][1] = -Math.sin(theta * this.speedX);
-		rotXMatr[2][2] =  Math.cos(theta * this.speedX);
-		rotXMatr[3][3] =  1;
-
-		// Rotation Z
-		rotZMatr[0][0] =  Math.cos(theta * this.speedZ);
-		rotZMatr[0][1] =  Math.sin(theta * this.speedZ);
-		rotZMatr[1][0] = -Math.sin(theta * this.speedZ);
-		rotZMatr[1][1] =  Math.cos(theta * this.speedZ);
-		rotZMatr[2][2] =  1;
-		rotZMatr[3][3] =  1;
 
 		for (var mesh of meshes) {
 			var projected = mesh.clone(),
 				vectors   = projected.vectors;
-
+			
 			for (var i = 0; i < vectors.length; i++) {
 				vectors[i]
-					.set(...rotXMatr.multiply(vectors[i]))
-					.set(...rotZMatr.multiply(vectors[i]))
 					.translate(0, 0, 3)
 					.set(...this.projMatr.multiply(vectors[i]))
 					.set(
@@ -283,5 +278,16 @@ export class Viewport {
 
 			projected.draw(this.context);
 		}
+	}
+
+	onresize() {
+		this.aspectRatio = canvas.height / canvas.width;
+		this.modified = true;
+		console.log("!");
+	}
+
+	set fov(deg) {
+		this.fovRad = 1 / Math.tan(deg * 0.5 / 180 * Math.PI);
+		this.modified = true;
 	}
 }
