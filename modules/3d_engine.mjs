@@ -159,6 +159,47 @@ export class Mesh extends Array {
 			vector.translate(x, y, z);
 	}
 
+	rotate(x, y, z) {
+		var rotXMatr = new Matrix,
+			rotZMatr = new Matrix,
+			rotYMatr = new Matrix;
+
+		// Rotation X
+		rotXMatr[0][0] =  1;
+		rotXMatr[1][1] =  Math.cos(x);
+		rotXMatr[1][2] =  Math.sin(x);
+		rotXMatr[2][1] = -Math.sin(x);
+		rotXMatr[2][2] =  Math.cos(x);
+		rotXMatr[3][3] =  1;
+
+		// Rotation Y
+		rotYMatr[0][0] =  Math.cos(y);
+		rotYMatr[2][0] =  Math.sin(y);
+		rotYMatr[0][2] = -Math.sin(y);
+		rotYMatr[2][2] =  Math.cos(y);
+		rotYMatr[1][1] =  1;
+		rotYMatr[3][3] =  1;
+
+		// Rotation Z
+		rotZMatr[0][0] =  Math.cos(z);
+		rotZMatr[0][1] =  Math.sin(z);
+		rotZMatr[1][0] = -Math.sin(z);
+		rotZMatr[1][1] =  Math.cos(z);
+		rotZMatr[2][2] =  1;
+		rotZMatr[3][3] =  1;
+
+		var vectors = this.vectors;
+
+		for (var i = 0; i < vectors.length; i++) {
+			vectors[i]
+				.set(...rotXMatr.multiply(vectors[i]))
+				.set(...rotYMatr.multiply(vectors[i]))
+				.set(...rotZMatr.multiply(vectors[i]))
+		}
+
+		return this;
+	}
+
 	get vectors() {
 		var o = [];
 
@@ -242,25 +283,22 @@ export class Camera {
 	projMatr = new Matrix
 	
 	constructor(canvas) {
-		canvas.onresize = this.onresize;
-
-		this.canvas      = canvas;
-		this.context     = canvas.getContext("2d");
-		this.fov = 90;
-
-		this.onresize();
+		this.canvas  = canvas;
+		this.context = canvas.getContext("2d");
+		this.fov     = 90;
 	}
 
 	draw(...meshes) {
-		if (this.modified) {
-			this.projMatr[0][0] = this.aspectRatio * this.fovRad;
-			this.projMatr[1][1] = this.fovRad;
-			this.projMatr[2][2] = this.far / (this.far - this.near);
-			this.projMatr[3][2] = (-this.far * this.near) / (this.far - this.near);
-			this.projMatr[2][3] = 1;
+		var aspectRatio = canvas.height / canvas.width,
+			fovRad = 1 / Math.tan(this.fov * 0.5 / 180 * Math.PI);
+		
+		this.projMatr[0][0] = aspectRatio * fovRad;
+		this.projMatr[1][1] = fovRad;
+		this.projMatr[2][2] = this.far / (this.far - this.near);
+		this.projMatr[3][2] = (-this.far * this.near) / (this.far - this.near);
+		this.projMatr[2][3] = 1;
 
-			this.modified = false;
-		}
+		this.modified = false;
 
 		for (var mesh of meshes) {
 			var projected = mesh.clone(),
@@ -278,16 +316,5 @@ export class Camera {
 
 			projected.draw(this.context);
 		}
-	}
-
-	onresize() {
-		this.aspectRatio = canvas.height / canvas.width;
-		this.modified = true;
-		console.log("!");
-	}
-
-	set fov(deg) {
-		this.fovRad = 1 / Math.tan(deg * 0.5 / 180 * Math.PI);
-		this.modified = true;
 	}
 }
