@@ -148,8 +148,6 @@ export class Mesh extends Array {
 	}
 
 	draw(context) {
-		//.clone().sort((a, b) => b.reduce((a, c) => a + c.z) / 3 - a.reduce((a, c) => a + c.z) / 3)
-
 		for (var tri of this)
 			tri.draw(context);
 	}
