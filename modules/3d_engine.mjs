@@ -92,13 +92,34 @@ export class Triangle extends Array {
 	}
 
 	draw(context) {
-		context.beginPath();
-		context.moveTo(this[2].x, this[2].y);
-
-		for (var vector of this)
-			context.lineTo(vector.x, vector.y)
+		var line1 = new Vector(
+				this[1].x - this[0].x,
+				this[1].y - this[0].y,
+				this[1].z - this[0].z
+			),
+			line2 = new Vector(
+				this[2].x - this[0].x,
+				this[2].y - this[0].y,
+				this[2].z - this[0].z
+			),
+			normal = new Vector(
+				line1.y * line2.z - line1.z * line2.y,
+				line1.z * line2.x - line1.x * line2.z,
+				line1.x * line2.y - line1.y * line2.x,
+			),
+			l = Math.sqrt(normal.x ** 2 + normal.y ** 2 + normal.z ** 2);
 		
-		context.stroke();
+		normal.set(normal.x / l, normal.y / l, normal.z / l);
+		
+		if (normal.z < 0) {
+			context.beginPath();
+			context.moveTo(this[2].x, this[2].y);
+
+			for (var vector of this)
+				context.lineTo(vector.x, vector.y)
+			
+			context.stroke();
+		}
 	}
 
 	map(...args) {
@@ -226,40 +247,15 @@ export class Viewport {
 		this.projMatr[2][2] = this.far / (this.far - this.near);
 		this.projMatr[3][2] = (-this.far * this.near) / (this.far - this.near);
 		this.projMatr[2][3] = 1;
-
-		this.speedX = Math.random() * 2 - 1;
-		this.speedZ = Math.random() * 2 - 1;
 	}
 
 	draw(...meshes) {
-		var theta = 0.001 * performance.now(),
-		    rotXMatr = new Matrix,
-		    rotZMatr = new Matrix;
-
-		// Rotation X
-		rotXMatr[0][0] =  1;
-		rotXMatr[1][1] =  Math.cos(theta * this.speedX);
-		rotXMatr[1][2] =  Math.sin(theta * this.speedX);
-		rotXMatr[2][1] = -Math.sin(theta * this.speedX);
-		rotXMatr[2][2] =  Math.cos(theta * this.speedX);
-		rotXMatr[3][3] =  1;
-
-		// Rotation Z
-		rotZMatr[0][0] =  Math.cos(theta * this.speedZ);
-		rotZMatr[0][1] =  Math.sin(theta * this.speedZ);
-		rotZMatr[1][0] = -Math.sin(theta * this.speedZ);
-		rotZMatr[1][1] =  Math.cos(theta * this.speedZ);
-		rotZMatr[2][2] =  1;
-		rotZMatr[3][3] =  1;
-
 		for (var mesh of meshes) {
 			var projected = mesh.clone(),
 				vectors   = projected.vectors;
-
+			
 			for (var i = 0; i < vectors.length; i++) {
 				vectors[i]
-					.set(...rotXMatr.multiply(vectors[i]))
-					.set(...rotZMatr.multiply(vectors[i]))
 					.translate(0, 0, 3)
 					.set(...this.projMatr.multiply(vectors[i]))
 					.set(
